@@ -59,11 +59,17 @@ unsafe extern "C" fn main(argc: u64, argv: *const *const i8) -> u64 {
     unsafe {
         ALLOC.lock().init(HEAPS.as_mut_ptr(), 1024);
     }
-
-    let s = String::from("Hello World!");
-    let c_string = alloc::ffi::CString::new(s.as_str()).unwrap();
-    let c_str = c_string.as_c_str();
-
-    syscall_write(c_str.as_ptr() as *const u8);
+    let mut args = Vec::new();
+    for i in 1..argc {
+        let argn = core::ffi::CStr::from_ptr(argv.add(i as usize).read());
+        let argn = String::from(argn.to_string_lossy());
+        args.push(argn);
+    }
+    let data = args.join(" ");
+    if data.is_empty() {
+        syscall_write(String::from("Hello World!").as_ptr() as *const u8);
+    } else {
+        syscall_write(data.as_ptr());
+    }
     return 0;
 }
